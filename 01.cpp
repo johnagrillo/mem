@@ -1,25 +1,35 @@
-#include <iostream>
 #include <cstring>
 
-#include "GifImage.h" 
+class GifImage {
+public:
+  static GifImage GetGif() {
+    const char sampleData[] = { 'G', 'I', 'F', '8', '9', 'a' }; 
+    return GifImage(sampleData, sizeof(sampleData)); }
 
-GifImage getGif() {
-  const char sampleData[] = { 'G', 'I', 'F', '8', '9', 'a' }; 
-  GifImage img(sampleData, sizeof(sampleData));
-  return img;  
-}
+  GifImage(const char * data, unsigned long dataSize) { 
+    size = dataSize;
+    buffer = new char[size];
+    memcpy(buffer, data, size);}
+
+  ~GifImage() { delete[] buffer;  }
+  
+  char* buffer;
+  unsigned long size;
+};
 
 int main() {
-  GifImage gif = getGif();
-  return 0;
+  GifImage gif = GifImage::GetGif();
+  return gif.size;
 }
 
-/*
-rdi	rsi 	rdx 	rcx 	r8	r9
 
-GifImage::GifImage(char const*, unsigned long):
+
+
+
+/*
+  GifImage::GifImage(char const* data, size_t size):
     ; Parameters:
-    ; rdi = this
+    ; rdi = this    ;; allocated  object
     ; rsi = data
     ; rdx = size
 
@@ -39,6 +49,9 @@ GifImage::GifImage(char const*, unsigned long):
     call    memcpy
 
     ret
+
+
+
 
 GifImage::GifImage(GifImage const&):
         push    rbp                        ; Save the old base pointer (function prologue)
@@ -81,9 +94,11 @@ getGif():
         mov     WORD PTR [rbp-2], 24889
         lea     rcx, [rbp-6]
         lea     rax, [rbp-32]
+	
         mov     edx, 6
         mov     rsi, rcx
         mov     rdi, rax
+	
         call    GifImage::GifImage(char const*, unsigned long) [complete object constructor]
         lea     rdx, [rbp-32]
         mov     rax, QWORD PTR [rbp-40]
@@ -98,23 +113,8 @@ getGif():
         leave
         ret
   
-main:
-        push    rbp
-        mov     rbp, rsp
-        push    rbx
-        sub     rsp, 24
-        lea     rax, [rbp-32]
-        mov     rdi, rax
-        call    getGif()
-        mov     ebx, 0
-        lea     rax, [rbp-32]
-        mov     rdi, rax
-        call    GifImage::~GifImage() [complete object destructor]
-        mov     eax, ebx
-        mov     rbx, QWORD PTR [rbp-8]
-        leave
-        ret
 
+	
 FUNCTION: GifImage::GifImage(GifImage const&)
 ----------------------------------------------
 push    rbp                    ; Save base pointer
@@ -137,9 +137,11 @@ FUNCTION: getGif()
 push    rbp
 mov     rbp, rsp
 sub     rsp, 48                       ; Reserve stack space
+
 mov     QWORD PTR [rbp-40], rdi       ; Save return location
 mov     DWORD PTR [rbp-6], 944130375  ; Load constant (partial data)
 mov     WORD PTR [rbp-2], 24889       ; Load remaining bytes
+
 lea     rcx, [rbp-6]                  ; rcx = char const* gif raw data
 lea     rax, [rbp-32]                 ; rax = destination GifImage on stack
 mov     edx, 6                        ; edx = length
@@ -155,28 +157,9 @@ call    GifImage::GifImage(GifImage const&)
                                       ; Copy temp into return location
 lea     rax, [rbp-32]                 ; rax = &temp
 mov     rdi, rax
-call    GifImage::~GifImage()        ; Destroy temp (explicit destructor call)
+call    GifImage::~GifImage()         ; Destroy temp (explicit destructor call)
 mov     rax, QWORD PTR [rbp-40]       ; Return address
 leave
 ret
 
-FUNCTION: main
----------------
-push    rbp
-mov     rbp, rsp
-push    rbx
-sub     rsp, 24
-lea     rax, [rbp-32]                ; rax = address for return value
-mov     rdi, rax
-call    getGif()                     ; Calls getGif() and initializes the value
-mov     ebx, 0
-lea     rax, [rbp-32]
-mov     rdi, rax
-call    GifImage::~GifImage()       ; Destroy GifImage on the stack
-mov     eax, ebx
-mov     rbx, QWORD PTR [rbp-8]
-leave
-ret
 
-*/
-					

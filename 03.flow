@@ -1,0 +1,44 @@
+main():
+  -> calls GetGif(&gif)
+    -> gif (RetGif) constructed at 0x7ffc1234
+
+    GetGif():
+      -> temp constructed at 0x7ffc5678
+        -> GifImage::GifImage(const char* data, size_t size) @ 0x7ffc5678
+          -> buffer = new char[6] at 0x601000
+          -> memcpy(buffer, data, size)  ; buffer = "GIF89a"
+
+      -> move-constructs RetGif from temp
+        -> GifImage::GifImage(GifImage&& other) @ 0x7ffc1234
+          -> buffer = other.buffer  (0x601000)
+          -> size = other.size      (6)
+          -> other.buffer = nullptr
+          -> other.size = 0
+
+      -> destroys temp
+        -> GifImage::~GifImage() @ 0x7ffc5678
+          -> delete[] buffer at nullptr (safe)
+
+    <- return from GetGif()
+
+  -> uses gif (now owns original buffer)
+     -> access `gif.size` at 0x7ffc123C
+        = 6
+
+   -> Memory layout:
+      [0x7ffc1234] char* buffer  -> 0x601000
+      [0x7ffc123C] size_t size   = 6
+
+  -> destroys gif
+    -> GifImage::~GifImage() @ 0x7ffc1234
+      -> delete[] buffer at 0x601000
+
+  ← return 6
+
+
+No duplicate allocation: Memory is not copied — ownership is transferred.
+Performance gain: Only one allocation (new char[6]), no second memcpy.
+temp.buffer becomes nullptr before destruction — avoiding double-free.
+
+
+

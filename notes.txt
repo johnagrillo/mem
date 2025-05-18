@@ -1,0 +1,26 @@
+          CALLER STACK FRAME                 CALLEE STACK FRAME (getGif)
+        +---------------------+          +-----------------------------+
+        |                     |          |                             |
+        | GifImage img        |◄────────┐| [rbp-40] (return dest)     |
+        | - buffer            |         │| ← points here (caller stack)|
+        | - size              |         │+-----------------------------+
+        +---------------------+         │| Temp GifImage [rbp-32]     |
+        | Return address      |◄──────┐ │| - buffer                    |
+        +---------------------+       │ │| - size                      |
+        | Previous RBP        |       │ │+-----------------------------+
+        +---------------------+       │ │| Raw data "GIF89a" [rbp-6]  |
+                                      │ │+-----------------------------+
+                          ┌───────────┘ │| Previous RBP (saved)       |
+                          │             │+-----------------------------+
+                          │             │| Return address to caller   |
+                          │             │+-----------------------------+
+                          │
+                          └─── rdi = &img passed from caller
+                               saved in callee at [rbp-40]
+
+Then:
+1. Temp object is constructed at [rbp-32]
+2. `GifImage::GifImage(const GifImage&)` copies it from:
+   - Source: [rbp-32]
+   - Destination: value at [rbp-40] → which points to caller's `img`
+3. Destructor is called on the temp object

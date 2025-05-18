@@ -2,8 +2,18 @@
 #include <cstring>
 #include "gifimage.h" 
 
-GifImage::GifImage(const char * data,
-	   size_t dataSize)
+class GifImage {
+  
+public:
+  GifImage(const char * data, size_t dataSize);
+  ~GifImage() //__attribute__((used))
+
+private:
+  char* buffer;
+  size_t size;
+};
+
+GifImage::GifImage(const char * data, size_t dataSize)
 { 
   size = dataSize;
   buffer = new char[size];

@@ -1,0 +1,91 @@
+
+@startuml
+actor main
+
+participant "GetGif()" as GetGif
+participant "GifImage temp (on GetGif stack)" as TempGif
+participant "GifImage gif (on main stack)" as RetGif
+
+main -> RetGif : allocate space (implicit)
+activate RetGif
+note right of RetGif
+  'gif' allocated on main's stack
+end note
+
+main -> GetGif : call GetGif(&RetGif)
+activate GetGif
+note right of main
+  Hidden return pointer:
+  main allocates GifImage 'gif'\nand passes &gif to GetGif
+end note
+
+GetGif -> TempGif : GifImage::GifImage(const char*, size_t)
+activate TempGif
+note right of TempGif
+  Constructs temp object on GetGif stack
+end note
+
+TempGif -> TempGif : buffer = new char[size]
+activate TempGif
+note right of TempGif
+  Allocates buffer on heap
+end note
+TempGif --> TempGif : buffer allocated
+deactivate TempGif
+
+TempGif -> TempGif : memcpy(buffer, data, size)
+note right of TempGif
+  Copies data into buffer
+end note
+
+TempGif --> GetGif : constructed
+deactivate TempGif
+
+TempGif -> RetGif : GifImage::GifImage(const GifImage&)
+activate RetGif
+note right of RetGif
+  Copy constructor:\ncopies buffer and size
+end note
+RetGif --> TempGif : copied
+deactivate RetGif
+
+GetGif -> TempGif : GifImage::~GifImage()
+activate TempGif
+note right of TempGif
+  Destructor frees buffer
+end note
+
+TempGif -> TempGif : delete[] buffer
+activate TempGif
+note right of TempGif
+  Frees allocated buffer
+end note
+TempGif --> TempGif : buffer freed
+deactivate TempGif
+
+TempGif --> GetGif : destroyed
+deactivate TempGif
+
+GetGif --> main : return
+deactivate GetGif
+note left of main
+  gif now holds copied data from temp
+end note
+
+main -> RetGif : GifImage::~GifImage()
+activate RetGif
+note right of RetGif
+  Destructor frees buffer on gif in main
+end note
+
+RetGif -> RetGif : delete[] buffer
+activate RetGif
+note right of RetGif
+  Frees allocated buffer
+end note
+RetGif --> RetGif : buffer freed
+deactivate RetGif
+
+RetGif --> main : destroyed
+deactivate RetGif
+@enduml

@@ -1,0 +1,20 @@
+There are two functions here:
+GifImage getGif();
+
+    Builds a GifImage from raw data.
+
+    Returns it by value (via a hidden pointer).
+
+    Uses stack space to construct a temporary object.
+
+main()
+
+    Allocates space for the returned GifImage.
+
+    Calls getGif() with a hidden pointer.
+
+    Destroys the returned object afterward.
+
+
+
+

@@ -1,35 +1,30 @@
-#include <iostream>
-#include <cstring> 
+#include <cstring>
 
 class GifImage {
-private:
-  char* buffer;
-  size_t size;
-  
 public:
-  GifImage(const char * data,
-	   size_t dataSize)
-  {
+  static GifImage GetGif() {
+    const char sampleData[] = { 'G', 'I', 'F', '8', '9', 'a' }; 
+    return GifImage(sampleData, sizeof(sampleData)); }
+
+  GifImage(const char * data, unsigned long dataSize) { 
     size = dataSize;
     buffer = new char[size];
-    memcpy(buffer, data, size);
-  }
+    memcpy(buffer, data, size);}
+
+  ~GifImage() { delete[] buffer;  }
   
-  ~GifImage() {
-    delete[] buffer;
-  }
+
+  char* buffer;
+  unsigned long size;
 };
 
-GifImage getGif() {
-  const char sampleData[] = { 'G', 'I', 'F', '8', '9', 'a' }; 
-  GifImage img(sampleData, sizeof(sampleData));
-  return img;  
-}
-
 int main() {
-  GifImage gif = getGif();
+  GifImage gif = GifImage::getGif();
   return 0;
 }
+
+
+
 
 /*
 
@@ -63,20 +58,20 @@ getGif():
 
 
 main:
-    push    rbp                                               ; Standard prologue
-    mov     rbp, rsp                                          ;
-    push    rbx                                               ; Save rbx (callee-saved)
-    sub     rsp, 24                                           ; Allocate stack
-    lea     rax, [rbp-32]                                     ; Compute address of 'img' local var
-    mov     rdi, rax                                          ; Pass address as destination for RVO
-    call    getGif()                                          ; Call getGif(), result directly in-place (RVO)
-    mov     ebx, 0                                            ; ebx = 0 (return value)
-    lea     rax, [rbp-32]                                     ; Prepare to destroy img
-    mov     rdi, rax                                          ; Pass to destructor
-    call    GifImage::~GifImage()                             ; Destroy img explicitly
-    mov     eax, ebx                                          ; Return value setup
-    mov     rbx, [rbp-8]                                      ; Restore rbx
-    leave                                                     ; Restore frame
-    ret                                                       ; Return from main
+    push    rbp                          ; Standard prologue
+    mov     rbp, rsp                     ;
+    push    rbx                          ; Save rbx (callee-saved)
+    sub     rsp, 24                      ; Allocate stack
+    lea     rax, [rbp-32]                ; Compute address of 'img' local var
+    mov     rdi, rax                     ; Pass address as destination for RVO
+    call    getGif()                     ; Call getGif(), result directly in-place (RVO)
+    mov     ebx, 0                       ; ebx = 0 (return value)
+    lea     rax, [rbp-32]                ; Prepare to destroy img
+    mov     rdi, rax                     ; Pass to destructor
+    call    GifImage::~GifImage()        ; Destroy img explicitly
+    mov     eax, ebx                     ; Return value setup
+    mov     rbx, [rbp-8]                 ; Restore rbx
+    leave                                ; Restore frame
+    ret                                  ; Return from main
   
 */

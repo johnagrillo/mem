@@ -1,0 +1,27 @@
+main():
+  -> calls GetGif()
+    -> hidden return pointer (RAX / RDI) = &gif @ 0x7ffc1234
+
+    GetGif():
+      -> directly constructs GifImage at 0x7ffc1234
+        -> GifImage::GifImage(const char*, size_t) @ 0x7ffc1234
+          -> buffer = new char[6] at 0x601000
+          -> memcpy(buffer, data, size)  ; buffer = "GIF89a"
+
+      -> no temp object
+      -> no move/copy constructor
+      -> no destructor call
+
+    <- return
+
+  -> uses gif
+     -> gif.buffer = 0x601000
+     -> gif.size = 6
+
+  -> gif destructor called
+     -> GifImage::~GifImage() @ 0x7ffc1234
+        -> delete[] buffer at 0x601000
+
+← return 6
+
+

@@ -1,0 +1,29 @@
+@startuml
+actor main
+participant "GetGif()" as GetGif
+participant "GifImage temp" as TempGif
+participant "GifImage gif (main)" as RetGif
+
+main -> GetGif : call GetGif(&gif)
+GetGif -> TempGif : GifImage::GifImage(const char*, size_t)
+note right of TempGif
+  Allocates buffer (0x601000)\nCopies "GIF89a"
+end note
+
+GetGif -> RetGif : GifImage::GifImage(GifImage&&)
+note right of RetGif
+  Transfers buffer ptr from temp\nSets temp.buffer = nullptr
+end note
+
+GetGif -> TempGif : ~GifImage()
+note right of TempGif
+  Destructor sees buffer=nullptr\nNo delete needed
+end note
+
+GetGif --> main
+main -> RetGif : use gif
+main -> RetGif : ~GifImage()
+note right of RetGif
+  Deletes buffer at 0x601000
+end note
+@enduml

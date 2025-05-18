@@ -1,0 +1,28 @@
++-----------------------------+------------------------+---------------------+-----------------------------+
+| Behavior                   | ❌ Copy (No Move/RVO)   | 🚚 Move (No RVO)     | ✅ RVO (Return Value Opt.)   |
++-----------------------------+------------------------+---------------------+-----------------------------+
+| Temp object created         | ✅ Yes (in GetGif())    | ✅ Yes (in GetGif()) | ❌ No                        |
+| Return value constructed    | ✅ Copy from temp       | ✅ Move from temp    | ✅ Direct in caller          |
+| Memory allocations          | 2 (temp + copy)         | 1 (moved buffer)     | 1                            |
+| Data copied with memcpy()   | ✅ Twice                | ✅ Once              | ✅ Once                      |
+| Copy constructor used       | ✅ Yes                  | ❌ No                | ❌ No                        |
+| Move constructor used       | ❌ No                   | ✅ Yes               | ❌ No                        |
+| Destructor (temp) called    | ✅ Yes                  | ✅ Yes (null buffer) | ❌ No temp = no dtor         |
+| Efficiency                  | 🚫 Worst                | ⚠️ Good              | ✅ Best                      |
+| Lifetime complexity         | High (copy + temp)      | Medium (move + temp)| Low (single object)         |
++-----------------------------+------------------------+---------------------+-----------------------------+
+
+
++-----------------------------+-------------------------+------------------------+------------------------------+
+| Behavior                   | Copy (No Move/RVO)      | Move (No RVO)           | RVO (Return Value Opt.)      |
++-----------------------------+-------------------------+------------------------+------------------------------+
+| Temp object created         | Yes (in GetGif)         | Yes (in GetGif)         | No                           |
+| Return value constructed    | Copy-constructed from temp | Move-constructed from temp | Constructed directly in caller |
+| Memory allocations          | 2 (temp + copy)         | 1 (moved buffer)         | 1                            |
+| Data copied with memcpy()   | Twice                   | Once                    | Once                         |
+| Copy constructor used       | Yes                     | No                      | No                           |
+| Move constructor used       | No                      | Yes                     | No                           |
+| Destructor (temp) called    | Yes                     | Yes (null buffer)       | No temp, no destructor       |
+| Efficiency                  | Worst (redundant work)  | Good (some overhead)     | Best (no overhead)           |
+| Lifetime complexity         | High                    | Medium                  | Low                          |
++-----------------------------+-------------------------+------------------------+------------------------------+

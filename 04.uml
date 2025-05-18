@@ -1,0 +1,25 @@
+@startuml
+actor main
+participant "GetGif()" as GetGif
+participant "GifImage gif (main)" as GifMain
+
+main -> GetGif : call GetGif(&gif)
+note right of main
+  Hidden return pointer passed:\n&gif (0x7ffc1234)
+end note
+
+GetGif -> GifMain : GifImage::GifImage(const char*, size_t)
+note right of GifMain
+  Constructs object directly in caller\nbuffer = new char[6]\nmemcpy "GIF89a"
+end note
+
+GetGif --> main : return
+
+main -> GifMain : use gif
+main -> GifMain : ~GifImage()
+note right of GifMain
+  Destructor deletes buffer at 0x601000
+end note
+@enduml
+
+
