@@ -1,0 +1,24 @@
+@startuml
+actor main
+participant "GetGifPtr()" as GetGifPtr
+participant "GifImage*" as GifImagePtr
+
+main -> GetGifPtr : call GetGifPtr()
+note right of GetGifPtr
+  - operator new(16) allocates GifImage
+  - constructs GifImage with "GIF89a"
+  - allocates internal buffer new char[6]
+  - copies "GIF89a" into buffer
+  - returns raw pointer (GifImage*)
+  - **No delete or destructor call**
+end note
+
+GetGifPtr --> main : returns GifImage*
+
+main -> GifImagePtr : use GifImage pointer
+note right of GifImagePtr
+  - access internal buffer at offset +8
+  - no destruction or free called here
+end note
+
+@enduml

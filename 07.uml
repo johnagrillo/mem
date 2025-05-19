@@ -1,0 +1,34 @@
+@startuml
+actor main
+participant "GifImage::GetGif() @0x1000" as GetGif
+participant "GifImage gif_obj @0x7ffc2020" as GifObj
+
+main -> GetGif : call GetGif(&gif_obj @0x7ffc2020)
+note right of main
+  Hidden return pointer passed:\n&gif_obj (0x7ffc2020)
+end note
+
+GetGif -> GifObj : GifImage::GifImage(data @0x7ffc2022, size=6)
+note right of GifObj
+  Constructed in-place at 0x7ffc2020\n
+  buffer = new char[6] @ 0x601000\n
+  memcpy "GIF89a" into buffer
+end note
+
+GetGif --> main : return (void, object constructed in caller space)
+
+main -> GifObj : use gif_obj
+note right of GifObj
+  gif_obj.buffer = 0x601000\n
+  gif_obj.size = 6
+end note
+
+main -> GifObj : ~GifImage()
+note right of GifObj
+  delete[] buffer at 0x601000
+  no delete for gif_obj (stack object)
+end note
+
+main --> : return 6
+@enduml
+

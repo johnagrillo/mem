@@ -1,0 +1,27 @@
+@startuml
+actor main
+participant "GifImage::GetGif() @ 0x1000" as GetGif
+participant "std::make_unique<GifImage> @ 0x1100" as MakeUnique
+participant "GifImage::GifImage(const char*, unsigned long) @ 0x1200" as GifCtor
+participant "std::unique_ptr<GifImage> @ 0x1300" as UniquePtr
+
+main -> GetGif : call GetGif()  
+note right: Stack frame at 0x7ffc1000  
+GetGif -> MakeUnique : call std::make_unique("GIF89a", 6)  
+note right: Data "GIF89a" at 0x7ffc1022  
+MakeUnique -> GifCtor : call GifImage::GifImage(data=0x7ffc1022, size=6)  
+note right: Allocates buffer at 0x601000  
+GifCtor --> MakeUnique : returns GifImage* at 0x601010 (object constructed)  
+MakeUnique --> GetGif : returns unique_ptr owning 0x601010  
+GetGif -> UniquePtr : move unique_ptr  
+UniquePtr --> GetGif : ownership transferred  
+GetGif --> main : returns unique_ptr owning 0x601010
+
+main -> UniquePtr : use GifImage->buffer = 0x601000  
+main -> UniquePtr : unique_ptr destroyed  
+note right: Calls GifImage::~GifImage(),\n deletes buffer at 0x601000
+
+@enduml
+
+
+

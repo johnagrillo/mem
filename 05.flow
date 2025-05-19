@@ -1,0 +1,19 @@
+main():
+  -> calls GifImage::GetGifPtr()
+    -> allocates 16 bytes for GifImage on heap (operator new)
+    -> prepares "GIF89a" bytes on stack as const char[6]
+    -> calls GifImage::GifImage(char const*, unsigned long) constructor in-place
+       -> sets this->size = 6
+       -> allocates buffer = new char[6] on heap
+       -> memcpy(buffer, "GIF89a", 6)
+    <- returns pointer to GifImage instance (heap-allocated)
+
+  <- returns pointer to GifImage (in rax)
+
+  -> main loads GifImage pointer
+  -> reads member at offset +8 (buffer pointer) from GifImage pointer
+  <- returns buffer pointer
+
+// **NO CALL TO delete OR operator delete**
+// **NO DESTRUCTOR INVOCATION**
+// The GifImage instance and internal buffer remain allocated on the heap indefinitely

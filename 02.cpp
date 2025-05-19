@@ -1,39 +1,33 @@
 #include <iostream>
 #include <cstring>
 
-
 class GifImage {
-private:
-  char* buffer;
-  size_t size;
+ public:
+  GifImage getGif() {
+    const char sampleData[] = { 'G', 'I', 'F', '8', '9', 'a',  };  // Simulated GIF header
+    GifImage img(sampleData, sizeof(sampleData));
+    return img;  }
   
-public:
   GifImage(const char* data, size_t dataSize)
   {
     size = dataSize;
     buffer = new char[size];
-    memcpy(buffer, data, size);
-  }
-  
-  // Copy Constructor
+    memcpy(buffer, data, size); }
 
+  // Deep Copy
   GifImage(const GifImage& other) {
     size = other.size;
     buffer = new char[size];
-    memcpy(buffer, other.buffer, size);
-  }
+    memcpy(buffer, other.buffer, size); }
 
   ~GifImage() {
     delete[] buffer;
   }
+
+  char* buffer;
+  size_t size;
+
 };
-
-
-GifImage getGif() {
-    const char sampleData[] = { 'G', 'I', 'F', '8', '9', 'a',  };  // Simulated GIF header
-    GifImage img(sampleData, sizeof(sampleData));
-    return img;  
-}
 
 int main() {
     GifImage gif = getGif();  
@@ -41,63 +35,6 @@ int main() {
 }
 
 
-GifImage::GifImage(char const*, unsigned long) [base object constructor]:
-        push    rbp
-        mov     rbp, rsp
-        sub     rsp, 32
-        mov     QWORD PTR [rbp-8], rdi
-        mov     QWORD PTR [rbp-16], rsi
-        mov     QWORD PTR [rbp-24], rdx
-        mov     rax, QWORD PTR [rbp-8]
-        mov     rdx, QWORD PTR [rbp-24]
-        mov     QWORD PTR [rax+8], rdx
-        mov     rax, QWORD PTR [rbp-8]
-        mov     rax, QWORD PTR [rax+8]
-        mov     rdi, rax
-        call    operator new[](unsigned long)
-        mov     rdx, rax
-        mov     rax, QWORD PTR [rbp-8]
-        mov     QWORD PTR [rax], rdx
-        mov     rax, QWORD PTR [rbp-8]
-        mov     rdx, QWORD PTR [rax+8]
-        mov     rax, QWORD PTR [rbp-8]
-        mov     rax, QWORD PTR [rax]
-        mov     rcx, QWORD PTR [rbp-16]
-        mov     rsi, rcx
-        mov     rdi, rax
-        call    memcpy
-        nop
-        leave
-        ret
-GifImage::GifImage(GifImage const&) [base object constructor]:
-        push    rbp
-        mov     rbp, rsp
-        sub     rsp, 16
-        mov     QWORD PTR [rbp-8], rdi
-        mov     QWORD PTR [rbp-16], rsi
-        mov     rax, QWORD PTR [rbp-16]
-        mov     rdx, QWORD PTR [rax+8]
-        mov     rax, QWORD PTR [rbp-8]
-        mov     QWORD PTR [rax+8], rdx
-        mov     rax, QWORD PTR [rbp-8]
-        mov     rax, QWORD PTR [rax+8]
-        mov     rdi, rax
-        call    operator new[](unsigned long)
-        mov     rdx, rax
-        mov     rax, QWORD PTR [rbp-8]
-        mov     QWORD PTR [rax], rdx
-        mov     rax, QWORD PTR [rbp-8]
-        mov     rdx, QWORD PTR [rax+8]
-        mov     rax, QWORD PTR [rbp-16]
-        mov     rcx, QWORD PTR [rax]
-        mov     rax, QWORD PTR [rbp-8]
-        mov     rax, QWORD PTR [rax]
-        mov     rsi, rcx
-        mov     rdi, rax
-        call    memcpy
-        nop
-        leave
-        ret
 GifImage::~GifImage() [base object destructor]:
         push    rbp
         mov     rbp, rsp
@@ -115,41 +52,6 @@ GifImage::~GifImage() [base object destructor]:
         nop
         leave
         ret
-
-+-----------------------------------------------------------------------+---------------------------------------------+
-|                  Assembly Instructions (with comments)               |               C++ Source                    |
-+-----------------------------------------------------------------------+---------------------------------------------+
-|  
-| GifImage::GifImage(GifImage const&) [base ctor]:                     | GifImage(const GifImage& other) {           |
-|   push    rbp                      ; Save base pointer               |                                             |
-|   mov     rbp, rsp                 ; Establish new stack frame       |                                             |
-|   sub     rsp, 16                  ; Allocate stack space            |                                             |
-|   mov     [rbp-8], rdi             ; Save 'this' pointer             |                                             |
-|   mov     [rbp-16], rsi            ; Save 'other' pointer            |                                             |
-|   mov     rax, [rbp-16]            ; Load 'other'                    |                                             |
-|   mov     rdx, [rax+8]             ; Load other.size into rdx        |     size = other.size;                      |
-|   mov     rax, [rbp-8]             ; Load 'this'                     |                                             |
-|   mov     [rax+8], rdx             ; this->size = other.size         |                                             |
-|   mov     rax, [rbp-8]             ; Load 'this'                     |                                             |
-|   mov     rax, [rax+8]             ; Load this->size                 |     buffer = new char[size];                |
-|   mov     rdi, rax                 ; Prepare arg for new[]           |                                             |
-|   call    operator new[]           ; Allocate memory for buffer      |                                             |
-|   mov     rdx, rax                 ; Save allocated pointer          |                                             |
-|   mov     rax, [rbp-8]             ; Load 'this'                     |                                             |
-|   mov     [rax], rdx               ; this->buffer = new buffer       |                                             |
-|   mov     rax, [rbp-8]             ; Load 'this'                     |                                             |
-|   mov     rdx, [rax+8]             ; Load this->size                 |                                             |
-|   mov     rax, [rbp-16]            ; Load 'other'                    |                                             |
-|   mov     rcx, [rax]               ; Load other.buffer               |                                             |
-|   mov     rax, [rbp-8]             ; Load 'this'                     |                                             |
-|   mov     rax, [rax]               ; Load this->buffer               |                                             |
-|   mov     rsi, rcx                 ; src = other.buffer              |     memcpy(buffer, other.buffer, size);     |
-|   mov     rdi, rax                 ; dst = this->buffer              |                                             |
-|   call    memcpy                   ; Copy contents                   |                                             |
-|   nop                              ; No operation (alignment)        | }                                           |
-|   leave                            ; Restore stack frame             |                                             |
-|   ret                              ; Return                          |                                             |
-+-----------------------------------------------------------------------+---------------------------------------------+
 
 
 GetGif

@@ -1,0 +1,30 @@
+main() @ stack frame 0x7ffc2000:
+  -> calls GifImage::GetGif() @ 0x1000 with hidden return pointer &gif_obj at 0x7ffc2020
+
+  GifImage::GetGif() @ 0x1000:
+    -> prepares literal "GIF89a" on stack at 0x7ffc2022 (6 bytes)
+    -> calls GifImage::GifImage(char const* data, unsigned long size) constructor
+       -> constructs GifImage **in-place** at 0x7ffc2020 (caller’s stack space)
+       -> inside constructor:
+          -> allocates buffer at heap 0x601000 via operator new[]
+          -> copies "GIF89a" into buffer at 0x601000 via memcpy
+          -> sets gif_obj.buffer = 0x601000
+          -> sets gif_obj.size = 6
+
+    <- returns (no pointer, object already constructed in caller space)
+
+  <- main resumes with GifImage object at 0x7ffc2020
+
+main():
+  -> uses gif_obj at 0x7ffc2020
+     -> gif_obj.buffer = 0x601000
+     -> gif_obj.size = 6
+
+  -> gif_obj destructor called (if called)
+     -> deletes buffer at 0x601000
+     -> destroys object at 0x7ffc2020 (stack, no free)
+
+<- return from main (e.g., returns gif_obj.size = 6)
+
+
+

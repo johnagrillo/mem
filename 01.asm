@@ -1,10 +1,9 @@
 
-
 GifImage::GifImage(char const* data, unsigned long size):
         push    rbp
         mov     rbp, rsp
-	
-	; Registers at function entry:
+        
+        ; Registers at function entry:
         ; rdi = this pointer (GifImage*)
         ; rsi = data pointer (const char*)
         ; rdx = size (unsigned long)
@@ -36,7 +35,7 @@ GifImage::~GifImage() [base object destructor]:
         mov     rax, QWORD PTR [rbp-8]      ; load 'this' pointer
         mov     rax, QWORD PTR [rax]        ; load this->buffer (pointer to allocated memory)
         test    rax, rax                    ; check if buffer is nullptr
-        je      .L7                        ; if null, skip delete
+        je      .L7                         ; if null, skip delete
 
         mov     rax, QWORD PTR [rbp-8]      ; reload 'this'
         mov     rax, QWORD PTR [rax]        ; load this->buffer again
@@ -47,7 +46,30 @@ GifImage::~GifImage() [base object destructor]:
         nop
         leave
         ret
+        
+main:	
+	push    rbp
+	mov     rbp, rsp
+	push    rbx
+	sub     rsp, 24                         ; Allocate space for GifImage
 	
+	lea     rdi, [rbp-32]                   ; Prepare address to construct GifImage
+	call    GifImage::GetGif()              ; Construct GifImage at [rbp-32]
+
+	mov     eax, [rbp-24]                   ; Load gif.size (stored at offset +8) into eax
+	mov     ebx, eax                        ; Save result in ebx
+
+	lea     rdi, [rbp-32]                   ; Prepare address of GifImage to destroy
+	call    GifImage::~GifImage()           ; Call destructor
+
+	mov     eax, ebx                        ; Return value -> eax
+	mov     rbx, [rbp-8]                    ; Restore callee-saved register
+	leave                                    mov    rsp, rbp ; pop    rbp
+	ret
+
+
+
+
 
 
 GifImage::GifImage(const GifImage& other):
@@ -76,7 +98,7 @@ GifImage::GifImage(const GifImage& other):
 
 GifImage::GetGifValue():
        ; GifImage::GetGifValue(GifImage* ret) -- ret pointer in rdi
-	
+        
         push    rbp
         mov     rbp, rsp
         sub     rsp, 32                 ; reduce stack from 48 to 32 (O1 optimization)
@@ -110,28 +132,4 @@ GifImage::GetGifValue():
 
 
 
-	
-main:
-    push    rbp
-    mov     rbp, rsp
-    push    rbx
-    sub     rsp, 32                    ; Align stack and reserve 32 bytes
-
-    lea     rdi, [rbp-32]              ; rdi = &gif
-    call    GifImage::GetGifValue()    ; gif constructed at [rbp-32]
-
-    mov     eax, DWORD PTR [rbp-24]    ; eax = gif.size
-                                       ; [rbp-32] = buffer (8 bytes)
-                                       ; [rbp-24] = size   (4 bytes) < load only needed value
-
-    mov     esi, eax                   ; Save return value in esi (temporarily)
-
-    lea     rdi, [rbp-32]              ; rdi = &gif
-    call    GifImage::~GifImage()      ; Destroy gif, freeing buffer
-
-    mov     eax, esi                   ; Return value (gif.size)
-    add     rsp, 32                    ; Restore stack space
-    pop     rbx
-    pop     rbp
-	ret
-	
+        

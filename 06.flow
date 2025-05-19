@@ -1,0 +1,26 @@
+main() @ stack 0x7ffc1000:
+  -> calls GifImage::GetGif() @ 0x1000
+     -> prepares literal "GIF89a" on stack at 0x7ffc1022 (6 bytes)
+
+     -> calls std::make_unique<GifImage>("GIF89a", 6) @ 0x1100
+        -> calls GifImage::GifImage(const char* data, unsigned long size) @ 0x1200
+           -> allocates buffer at heap 0x601000 (operator new[])
+           -> copies "GIF89a" into buffer 0x601000 via memcpy
+
+        <- returns constructed GifImage* at 0x601010 (object lives here)
+
+     <- returns unique_ptr owning 0x601010
+
+  <- GetGif() returns unique_ptr owning GifImage @ 0x601010
+
+main() now owns unique_ptr<GifImage> to 0x601010:
+  -> accesses GifImage->buffer = 0x601000 (the allocated char array)
+
+main() ends or releases unique_ptr:
+  -> unique_ptr destructor called
+     -> calls GifImage::~GifImage()
+        -> deletes buffer at 0x601000
+     -> deletes GifImage object at 0x601010
+
+End of flow
+
