@@ -1,79 +1,79 @@
 @startuml
-actor main
+autonumber
 
 participant main
 participant GetGif
+participant "char* buffer <color:orange>@0x601000</color>" as Buffer
+participant GifImage
+participant "Buffer" as Buffer
+participant "<color:green>@0x5678 </color>" as Temp
+participant "<color:blue>0x1234</color>" as Gif
 
-participant "GifImage temp (on GetGif stack)" as TempGif
-participant RetGif
+activate main
 
-create RetGif
-main -> RetGif : allocate GifImage
-activate RetGif
+create Gif
+activate Gif
+main -> Gif : <color:blue>mainGif = </color>
 
-note right of RetGif
-  'gif' allocated on main's stack
-end note
 
-main -> GetGif : call GetGif(&RetGif)
+main -> GetGif : GetGif(<color:blue>&mainGif</color>)
 activate GetGif
-note right of main
-  Hidden return pointer:
-  main allocates GifImage 'gif'
-  and passes &gif to GetGif
+
+
+create Temp
+GetGif -> Temp : <color:green>tempGif = </color>
+
+GetGif -> GifImage : GifImage::GifImage(<color:green>&tempGif</color>, "GIF89a", 6)
+activate GifImage
+
+GifImage -> GifImage : char[6] at <color:orange>0x601000</color>
+create Buffer
+
+GifImage -> Buffer : memcpy("GIF89a", 6)
+
+note right of GifImage
+Allocated by temp  
+<color:orange>0x601000</color> = "GIF89a"
+end note
+deactivate GifImage
+
+GetGif -> GifImage : GifImage::GifImage(const GifImage&) <color:blue>@0x1234</color>
+activate GifImage
+
+GifImage -> Buffer : buffer = temp.buffer (shallow copy)  
+GifImage -> GifImage : size = 6
+
+note right of GifImage
+  Shallow copy: shares buffer <color:orange>@0x601000</color>
 end note
 
-GetGif -> TempGif : create GifImage temp
-create TempGif
-GetGif -> TempGif : GifImage::GifImage(const char*, size_t)
-activate TempGif
-note right of TempGif
-  Constructs temp object on GetGif stack
+deactivate GifImage
+
+GetGif -> GifImage : ~GifImage() <color:green>@0x5678</color>
+activate GifImage
+GifImage -> Buffer : delete[] buffer <color:orange>@0x601000</color>
+destroy Buffer
+
+destroy Temp
+deactivate GifImage
+
+note right of GifImage
+X️ buffer now dangling (<color:orange>0x601000</color> freed)
 end note
 
-TempGif -> TempGif : buffer = new char[size]
-note right of TempGif
-  Allocates buffer on heap
-end note
-
-TempGif -> TempGif : memcpy(buffer, data, size)
-note right of TempGif
-  Copies data into buffer
-end note
-
-TempGif -> RetGif : GifImage::GifImage(const GifImage&)
-activate RetGif
-note right of RetGif
-  Shallow copy constructor:
-  copies pointer (buffer) and size only
-end note
-deactivate RetGif
-
-GetGif -> TempGif : GifImage::~GifImage()
-note right of TempGif
-  Destructor frees buffer
-end note
-
-TempGif -> TempGif : delete[] buffer
-note right of TempGif
-  Frees shared buffer (RetGif now has dangling pointer!)
-end note
-destroy TempGif
-
-GetGif --> main : return
+main <-- GetGif : return
 deactivate GetGif
-note left of main
-  'gif' holds shallow copy — buffer now dangling!
-end note
 
-main -> RetGif : GifImage::~GifImage()
-note right of RetGif
-  Destructor tries to delete already freed buffer
-  → Undefined Behavior (double free)
-end note
+main -> main : access gif.size = 6
+main -> main : access gif.buffer → <color:orange>0x601000</color> (dangling)
 
-RetGif -> RetGif : delete[] buffer
-destroy RetGif
+main -> GifImage : ~GifImage() <color:blue>@0x1234</color>
+GifImage -> Buffer : delete[] buffer <color:orange>@0x601000</color> ❌
+
+note right of GifImage
+X Double delete → undefined behavior!
+end note
+destroy Gif
+
 @enduml
-
 

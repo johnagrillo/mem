@@ -1,0 +1,70 @@
+@startuml
+actor main
+participant GetGif
+participant "char* buffer <color:orange>@0x601000</color>" as Buffer
+participant GifImage
+
+
+participant "<color:green>@0x5678 </color>" as Temp
+participant "<color:blue>0x1234</color>" as Gif
+
+activate main
+
+create Gif
+activate Gif
+main -> Gif : <color:blue>mainGif = </color>
+
+
+main -> GetGif : GetGif(<color:blue>&mainGif</color>)
+activate GetGif
+
+
+create Temp
+GetGif -> Temp : <color:green>tempGif = </color>
+GetGif -> GifImage : GifImage::GifImage(<color:green>&tempGif</color>, "GIF89a", 6)
+
+GifImage -> GifImage : char[6] at <color:orange>0x601000</color>
+create Buffer
+
+GifImage -> Buffer : memcpy("GIF89a", 6)
+
+note right of Buffer
+Allocated by temp  
+<color:orange>0x601000</color> = "GIF89a"
+end note
+
+GetGif -> Gif : GifImage::GifImage(const GifImage&) <color:blue>@0x1234</color>
+
+Gif -> Buffer : buffer = temp.buffer (shallow copy)  
+Gif -> Gif : size = 6
+
+note right of Gif
+Shallow copy: shares buffer <color:orange>@0x601000</color>
+end note
+
+GetGif -> Temp : ~GifImage() <color:green>@0x5678</color>
+Temp -> Buffer : delete[] buffer <color:orange>@0x601000</color>
+destroy Buffer
+
+GetGif -> Temp : destroyed
+destroy Temp
+
+note right of Gif
+⚠️ buffer now dangling (<color:orange>0x601000</color> freed)
+end note
+
+deactivate GetGif
+main <-- GetGif : return
+
+main -> Gif : access gif.size = 6
+main -> Gif : access gif.buffer → <color:orange>0x601000</color> (dangling)
+
+main -> Gif : ~GifImage() <color:blue>@0x1234</color>
+Gif -> Buffer : delete[] buffer <color:orange>@0x601000</color> ❌
+
+note right of Gif
+❌ Double delete → undefined behavior!
+end note
+destroy Gif
+
+@enduml

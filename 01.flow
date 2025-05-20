@@ -1,31 +1,28 @@
 main():
-  -> calls GetGif(&gif)
-    -> gif (RetGif) constructed at 0x7ffc1234
+  -> gif constructed at 0x....1234
+  -> GetGif(0x...1234):
+      -> temp constructed at 0x....5678
+      
+      -> GifImage::GifImage(0x...5678, "GIF89a", 6) @ 0x7ffc5678
+        -> buffer = new char[6] at 0x601000
+        -> memcpy(0x601000, "GIF89a", 6)
 
-    GetGif():
-      -> temp constructed at 0x7ffc5678
-        -> GifImage::GifImage(const char* data, size_t size) @ 0x7ffc5678
-          -> buffer = new char[6] at 0x601000
-          -> memcpy(buffer, data, size)  ; buffer = "GIF89a"
-
-      -> shallow copy-constructs RetGif from temp
-        -> GifImage::GifImage(const GifImage& other) @ 0x7ffc1234
+      -> GifImage::GifImage(0x....1234, 0x....5678)
           -> buffer = other.buffer = 0x601000  (shared)
           -> size   = 6
 
-      -> destroys temp
-        -> GifImage::~GifImage() @ 0x7ffc5678
-          -> delete[] buffer at 0x601000  ❗️
+      -> GifImage::~GifImage() @ 0x...5678
+         -> delete[] buffer at 0x601000  
 
     <- return from GetGif()
 
-  -> uses gif (now holding shallow copy of temp)
+  -> uses gif 0x....1234 
      -> access `gif.size` = 6
      -> gif.buffer is dangling (0x601000 was already deleted)
 
-  -> destroys gif
+  -> destroys 0x....1234
     -> GifImage::~GifImage() @ 0x7ffc1234
-      -> delete[] buffer at 0x601000 ❌❗️**Double delete!** → **undefined behavior**
+      -> delete[] buffer at 0x601000 ️**Double delete!** → **undefined behavior**
 
   <- return 6  (but crash or heap corruption likely)
 
