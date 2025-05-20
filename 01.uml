@@ -6,8 +6,8 @@ participant GetGif
 participant "char* buffer <color:orange>@0x601000</color>" as Buffer
 participant GifImage
 participant "Buffer" as Buffer
-participant "<color:green>@0x5678 </color>" as Temp
-participant "<color:blue>0x1234</color>" as Gif
+participant "<color:green>tmpGif</color>" as Temp
+participant "<color:blue>mainGif</color>" as Gif
 
 activate main
 
@@ -21,35 +21,34 @@ activate GetGif
 
 
 create Temp
-GetGif -> Temp : <color:green>tempGif = </color>
-
-GetGif -> GifImage : GifImage::GifImage(<color:green>&tempGif</color>, "GIF89a", 6)
+GetGif -> Temp : <color:green>tmpGif = </color>
+activate Temp
+GetGif -> GifImage : GifImage(<color:green>&tmpGif</color>, "GIF89a", 6)
 activate GifImage
 
-GifImage -> GifImage : char[6] at <color:orange>0x601000</color>
 create Buffer
 
-GifImage -> Buffer : memcpy("GIF89a", 6)
+GifImage -> Buffer : <color:green>tmpGif.buffer</color> = new char[6] at <color:orange>0x601000</color>
 
-note right of GifImage
-Allocated by temp  
-<color:orange>0x601000</color> = "GIF89a"
-end note
+Temp -> Buffer
+GifImage -> GifImage : <color:green>tmpGif.size</color> = 6
+
+GifImage -> Buffer : memcpy(<color:green>tmpGif.buffer</color> ,"GIF89a", 6)
+
 deactivate GifImage
 
-GetGif -> GifImage : GifImage::GifImage(const GifImage&) <color:blue>@0x1234</color>
+GetGif -> GifImage : GifImage(<color:blue>&mainGif</color>, <color:green>&tmpGif)</color>
+note right of GifImage
+X Shallow copy: shares buffer <color:orange>@0x601000</color>
+end note
 activate GifImage
+GifImage -> Buffer : <color:blue>mainGif.buffer</color> = <color:green>tmpGif.buffer</color> (shallow copy)  
+Gif -> Buffer
 
-GifImage -> Buffer : buffer = temp.buffer (shallow copy)  
-GifImage -> GifImage : size = 6
-
-note right of GifImage
-  Shallow copy: shares buffer <color:orange>@0x601000</color>
-end note
-
+GifImage -> GifImage : <color:blue>mainGif.size</color> = <color:green>tmpGif.size</color>
 deactivate GifImage
 
-GetGif -> GifImage : ~GifImage() <color:green>@0x5678</color>
+GetGif -> GifImage : ~GifImage(<color:green>tmpGif</color>)
 activate GifImage
 GifImage -> Buffer : delete[] buffer <color:orange>@0x601000</color>
 destroy Buffer
@@ -58,17 +57,17 @@ destroy Temp
 deactivate GifImage
 
 note right of GifImage
-X️ buffer now dangling (<color:orange>0x601000</color> freed)
+X buffer now dangling (<color:orange>0x601000</color> freed)
 end note
 
 main <-- GetGif : return
 deactivate GetGif
 
-main -> main : access gif.size = 6
-main -> main : access gif.buffer → <color:orange>0x601000</color> (dangling)
+main -> main : access <color:blue>mainGif.size</color> is 6
+main -> main : <color:blue>mainGif.size</color> (dangling)
 
-main -> GifImage : ~GifImage() <color:blue>@0x1234</color>
-GifImage -> Buffer : delete[] buffer <color:orange>@0x601000</color> ❌
+main -> GifImage : ~GifImage(<color:blue>mainGif</color>)
+GifImage -> Buffer : delete[] buffer <color:orange>@0x601000</color> 
 
 note right of GifImage
 X Double delete → undefined behavior!
