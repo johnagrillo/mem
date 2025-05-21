@@ -64,9 +64,9 @@ main <-- GetGif : return
 deactivate GetGif
 
 main -> main : access <color:blue>mainGif.size</color> is 6
-main -> main : <color:blue>mainGif.size</color> (dangling)
+main -> main : <color:blue>mainGif.buffer</color> (dangling)
 
-main -> GifImage : ~GifImage(<color:blue>mainGif</color>)
+main -> GifImage : ~GifImage(<color:blue>%mainGif</color>)
 GifImage -> Buffer : delete[] buffer <color:orange>@0x601000</color> 
 
 note right of GifImage

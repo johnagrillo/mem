@@ -1,51 +1,13 @@
 
-GifImage::GifImage(char const* data, unsigned long size):
-        push    rbp
-        mov     rbp, rsp
-        
-        ; Registers at function entry:
-        ; rdi = this pointer (GifImage*)
-        ; rsi = data pointer (const char*)
-        ; rdx = size (unsigned long)
+Offset    | Contents                        | Notes
+----------|--------------------------------|-----------------------------
+rbp +8    | return address                 | not directly accessible via rbp
+rbp +0    | [saved RBP]                    | base pointer of the caller
+rbp -8    | saved rbx                      | callee-saved register
+rbp -16   | unsigned long size (6)         | 8 bytes (copied from gifP->size)
+rbp -24   | pointer to GifImage (gifP)     | 8 bytes
+rbp -32   | sampleData bytes               | 6 bytes: 'G' 'I' 'F' '8' '9' 'a' 
 
-        mov     QWORD PTR [rdi+8], rdx        ; this->size = size
-        mov     rdi, rdx                      ; rdi = size (for operator new[])
-        call    operator new[]                ; allocate buffer = operator new[](size)
-        mov     QWORD PTR [rbp-8], rax        ; save buffer pointer on stack temporarily
-
-        mov     QWORD PTR [rdi-8], rax        ; this->buffer = allocated pointer
-                                              ; NOTE: [rdi-8] because we used rbp in original
-                                              ;       Here, original used [rax], careful with registers
-
-        mov     rdi, rax                      ; dest = buffer
-        mov     rsi, rsi                      ; src = data (already in rsi)
-        mov     rdx, rdx                      ; size = size (already in rdx)
-        call    memcpy                        ; memcpy(buffer, data, size)
-
-        pop     rbp
-        ret
-
-
-GifImage::~GifImage() [base object destructor]:
-        push    rbp
-        mov     rbp, rsp
-        sub     rsp, 16
-        mov     QWORD PTR [rbp-8], rdi      ; store 'this' pointer on stack
-
-        mov     rax, QWORD PTR [rbp-8]      ; load 'this' pointer
-        mov     rax, QWORD PTR [rax]        ; load this->buffer (pointer to allocated memory)
-        test    rax, rax                    ; check if buffer is nullptr
-        je      .L7                         ; if null, skip delete
-
-        mov     rax, QWORD PTR [rbp-8]      ; reload 'this'
-        mov     rax, QWORD PTR [rax]        ; load this->buffer again
-        mov     rdi, rax                    ; argument to operator delete[] (buffer pointer)
-        call    operator delete[](void*)    ; free allocated buffer memory
-
-.L7:
-        nop
-        leave
-        ret
         
 main:	
 	push    rbp
