@@ -1,42 +1,46 @@
-+----------+----------------------------------+---------------------------------+
-| Offset   | Contents                         | Notes                           |
-+----------+----------------------------------+---------------------------------+
-| rbp +8   | return address                   | caller return address           |
-| rbp +0   | saved RBP                        | base pointer of the caller      |
-| rbp -8   | saved RBX                        | callee-saved register           |
-| rbp -16  | pointer to GifImage (heap addr)  | result of operator new(16)      |
-| rbp -24  | sampleData bytes                 | 6 bytes: 'G' 'I' 'F' '8' '9' 'a'|
-+----------+----------------------------------+---------------------------------+
 
++------------|-----------------|-------------------------
+|RBP + 8     |  Return address  | Return address to caller (pushed by call)
+|RBP + 0     |  Old RBP Previous| frame pointer
+|RBP - 8     |  Saved rbx       |Callee-saved register pushed at function start
+
+section .text
 main:
     push    rbp
     mov     rbp, rsp
-    push    rbx
-    sub     rsp, 24              
-    
-    mov     DWORD PTR [rbp-24], 0x38464947     ; Store 'GIF8' = 0x38464947
-    mov     WORD PTR [rbp-20], 0x6139            ; Store '9a'   = 0x6139
+    push    rbx                ; save rbx, we'll store pointer here
+    sub     rsp, 8             
 
-    mov     edi, 16                      ; Allocate GifImage object (16 bytes)
-    call    operator new(unsigned long)
-    mov     rbx, rax                    ; store pointer in rbx
+    mov     edi, 16            ; size argument for operator new
+    call    operator new       ; allocate GifImage object
+    mov     rbx, rax           ; save pointer in rbx (GifImage*)
 
-    lea     rsi, [rbp-24]               ; pointer to sample data
-    mov     edx, 6                      ; size
-    mov     rdi, rbx                    ; destination
-    call    GifImage::GifImage(char const*, unsigned long)
+    lea     rsi, [rel gifData] ; rsi = pointer to gifData in .rodata
+    mov     edx, 6             ; edx = size (6 bytes)
+    mov     rdi, rbx           ; rdi = this pointer for GifImage::GifImage
+    call    GifImage::GifImage ; call constructor
 
-    mov     QWORD PTR [rbp-16], rbx ; Save gifP to stack
+    mov     DWORD eax, [rbx+8]   ; directly access the `size` field
+    mov     esi, eax             ; save for return
 
-    mov     rax, QWORD PTR [rbx+8]     ; Access gifP->size
-    mov     ebx, eax
+    mov     rdi, rbx
+    test    rdi, rdi
+    je      .L1
 
-    mov     rdi, rbx                       ; Cleanup
-    call    GifImage::~GifImage()
-    mov     edi, 16
-    call    operator delete(void*, unsigned long)
+    call    GifImage::~GifImage ; call destructor
 
-    mov     eax, ebx                     ; Return size
-    mov     rbx, QWORD PTR [rbp-8]
+    mov     esi, 16
+    mov     rdi, rbx
+    call    operator delete     ; free GifImage memory
+
+.L1:
+    mov     eax, esi            ; return size in eax
+    pop     rbx
     leave
     ret
+
+
+
+section .rodata
+gif_header:
+	db "GIF89a", 0    ; Read-only GIF header (null-terminated)

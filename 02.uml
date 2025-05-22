@@ -1,82 +1,78 @@
 @startuml
-actor main
+autonumber
 
 participant main
 participant GetGif
+participant "<color:green>@0x601000</color>" as Buffer
+participant GifImage
+participant "<color:blue>@0x602000</color>" as Buffer2
+participant "Buffer" as Buffer
+participant "<color:green>tmpGif</color>" as Temp
+participant "<color:blue>mainGif</color>" as Gif
 
-participant "GifImage temp (on GetGif stack)" as TempGif
-participant RetGif
+activate main
+
+create Gif
+activate Gif
+main -> Gif : <color:blue>mainGif = </color>
 
 
-create RetGif
-main -> RetGif : allocate GifImage
-activate RetGif
-
-
-note right of RetGif
-  'gif' allocated on main's stack
-end note
-
-main -> GetGif : call GetGif(&RetGif)
+main -> GetGif : GetGif(<color:blue>&mainGif</color>)
 activate GetGif
-note right of main
-  Hidden return pointer:
-  main allocates GifImage 'gif'
-  and passes &gif to GetGif
-end note
 
-GetGif -> TempGif : create GifImage temp
-create TempGif
-GetGif -> TempGif : GifImage::GifImage(const char*, size_t)
-activate TempGif
-note right of TempGif
-  Constructs temp object on GetGif stack
-end note
 
-TempGif -> TempGif : buffer = new char[size]
-note right of TempGif
-  Allocates buffer on heap
-end note
+create Temp
+GetGif -> Temp : <color:green>tmpGif = </color>
+activate Temp
+GetGif -> GifImage : GifImage(<color:green>&tmpGif</color>, "GIF89a", 6)
+activate GifImage
 
-TempGif -> TempGif : memcpy(buffer, data, size)
-note right of TempGif
-  Copies data into buffer
-end note
+create Buffer
 
-TempGif -> RetGif : GifImage::GifImage(const GifImage&)
-activate RetGif
-note right of RetGif
-  Copy constructor:
-  copies buffer and size from temp
-end note
-deactivate RetGif
 
-GetGif -> TempGif : GifImage::~GifImage()
-note right of TempGif
-  Destructor frees buffer
-end note
+GifImage -> Buffer : <color:green>tmpGif.buffer</color> = new char[6] at <color:orange>0x601000</color>
+GifImage -> Buffer : memcpy(<color:green>tmpGif.buffer</color> ,"GIF89a", 6)
+Temp -> Buffer
+GifImage -> GifImage : <color:green>tmpGif.size</color> = 6
 
-TempGif -> TempGif : delete[] buffer
-note right of TempGif
-  Frees allocated buffer
-end note
-destroy TempGif
 
-GetGif --> main : return
+deactivate GifImage
+
+
+/'
+ deep copy
+'/
+
+				
+GetGif -> GifImage : GifImage(<color:blue>&mainGif</color>, <color:green>&tmpGif)</color>
+activate GifImage
+create Buffer2
+
+GifImage -> Buffer2 : <color:blue>mainGif.buffer</color> = new char[6] at <color:blue>0x601000</color>					
+Gif -> Buffer2
+GifImage -> Buffer2 : memcpy(<color:green>mainGif.buffer</color> , <color:blue>tmpGif.buffer</color> , 6)
+					
+GifImage -> GifImage : <color:blue>mainGif.size</color> = <color:green>tmpGif.size</color>
+deactivate GifImage
+
+GetGif -> GifImage : ~GifImage(<color:green>tmpGif</color>)
+activate GifImage
+GifImage -> Buffer : delete[] buffer <color:green>@0x601000</color>
+destroy Buffer
+
+destroy Temp
+deactivate GifImage
+
+main <-- GetGif : return
 deactivate GetGif
-note left of main
-  'gif' now holds copied data from temp
-end note
 
-main -> RetGif : GifImage::~GifImage()
-note right of RetGif
-  Destructor frees buffer on gif in main
-end note
+main -> main : access <color:blue>mainGif.size</color> is 6
+main -> main : <color:blue>mainGif.buffer</color>
 
-RetGif -> RetGif : delete[] buffer
-note right of RetGif
-  Frees allocated buffer
-end note
-destroy RetGif
+main -> GifImage : ~GifImage(<color:blue>&mainGif</color>)
+GifImage -> Buffer : delete[] buffer <color:orange>@0x601000</color> 
+
+destroy Gif
+
 @enduml
 

@@ -1,0 +1,43 @@
+@startuml
+autonumber
+actor Caller
+
+
+participant main
+participant "char* buffer <color:orange>@0x601000</color>" as Buffer
+participant GifImage
+participant "Buffer" as Buffer
+participant "<color:blue>mainGif</color>" as Gif
+Caller -> main
+activate main
+	
+create Gif
+activate Gif
+main -> Gif : <color:blue>mainGif = </color>
+	
+/'
+Call Constructor
+'/
+	
+main -> GifImage : GifImage(<color:blue>&mainGif</color>, "GIF89a", 6)
+activate GifImage
+create Buffer
+Gif -> Buffer : <color:blue>mainGif.buffer</color> = new char[6] at <color:orange>0x601000</color>
+GifImage -> GifImage : <color:green>tmpGif.size</color> = 6
+GifImage -> Buffer : memcpy(<color:green>tmpGif.buffer</color> ,"GIF89a", 6)
+main -> GifImage : access <color:blue>mainGif.size</color> is 6
+GifImage -> main
+main -> GifImage : <color:blue>mainGif.buffer</color>
+GifImage -> main
+
+	
+main -> GifImage : ~GifImage(<color:blue>%mainGif</color>)
+GifImage -> Buffer : delete[] buffer <color:orange>@0x601000</color> 
+destroy Buffer
+destroy Gif
+deactivate GifImage
+main -> Caller : return 6
+@enduml
+
+
+
